@@ -1,0 +1,14 @@
+  upstream application {
+      server application:8009;
+  }
+
+  server {
+    listen       80;
+    server_name  localhost;
+
+    location / {
+      proxy_http_version 1.1;
+      proxy_set_header Connection "";
+      proxy_pass    http://application/;
+    }
+}
