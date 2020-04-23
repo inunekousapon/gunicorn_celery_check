@@ -4,21 +4,48 @@ services:
         image: nginx
         depends_on:
             - application
-            - redis
+            - redis-sentinel
         volumes:
         - ./nginx/test.template:/etc/nginx/conf.d/mysite.template
         ports:
-        - "80:80"
+            - "80:80"
         environment:
-        - NGINX_HOST=foobar.com
-        - NGINX_PORT=80
+            - NGINX_HOST=foobar.com
+            - NGINX_PORT=80
         command: /bin/bash -c "envsubst < /etc/nginx/conf.d/mysite.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"
-    redis:
-        image: "redis:latest"
+        networks:
+            - app-tier
+    redis-master:
+        image: 'bitnami/redis:latest'
+        environment:
+            - ALLOW_EMPTY_PASSWORD=yes
+            - REDIS_REPLICATION_MODE=master
+        networks:
+            - app-tier
+    redis-slave:
+        image: 'bitnami/redis:latest'
+        environment:
+            - ALLOW_EMPTY_PASSWORD=yes
+            - REDIS_REPLICATION_MODE=slave
+            - REDIS_MASTER_HOST=redis-master
+            - REDIS_MASTER_PORT_NUMBER=6379
+        networks:
+            - app-tier
+    redis-sentinel:
+        image: 'bitnami/redis-sentinel:latest'
+        depends_on:
+            - redis-master
+            - redis-slave
+        environment:
+            - ALLOW_EMPTY_PASSWORD=yes
+            - REDIS_MASTER_HOST=redis-master
         ports:
-            - "6379:6379"
+            - '26379:26379'
+        networks:
+            - app-tier
     application:
         build: .
+        hostname: application
         container_name: application
         environment: 
             - C_FORCE_ROOT=true
@@ -27,3 +54,8 @@ services:
         volumes:
             - ./app:/app
         command: "/usr/bin/supervisord"
+        networks:
+            - app-tier
+networks:
+    app-tier:
+        driver: bridge
