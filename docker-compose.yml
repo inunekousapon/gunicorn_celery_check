@@ -19,6 +19,9 @@ services:
             - "6379:6379"
     application:
         build: .
+        container_name: application
+        environment: 
+            - C_FORCE_ROOT=true
         ports:
             - "8080:8080"
         volumes:
