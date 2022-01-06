@@ -1,5 +1,5 @@
 flask
 gunicorn==19.7.0
-celery==3.1.25
+celery==5.2.2
 redis==2.10.5
 celery-redis-sentinel==0.3.0
